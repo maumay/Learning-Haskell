@@ -10,9 +10,9 @@ x <=> y = (abs $ x - y) < 0.000001
 -- the predicate.
 npaths :: Int -> (Double -> Bool) -> Double -> Int
 npaths depth p s | depth == 0 = if p s then 1 else 0
-                 | otherwise = (npaths m p s1) + (npaths m p s2)
+                 | otherwise  = (npaths m p s1) + (npaths m p s2)
                  where
-                  m = depth - 1
+                  m        = depth - 1
                   (s1, s2) = (s * upFactor, s * downFactor)
 
 -- Assuming equal probability for moving up/down at each step
