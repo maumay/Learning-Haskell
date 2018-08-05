@@ -54,3 +54,38 @@ balance xs  = Node' (balance l) (balance r)
               where
                 (l, r) = (take n xs, drop n xs)
                 n      = (length xs) `div` 2
+
+
+-- Ex 5/
+data Expr = Val Int | Add Expr Expr deriving (Eq, Show)
+
+folde :: (Int -> a) -> (a -> a -> a) -> Expr -> a
+folde f g (Val x)   = f x
+folde f g (Add x y) = g (folde f g x) (folde f g y)
+
+
+-- Ex 6/
+eval :: Expr -> Int
+eval = folde id (+)
+
+size :: Expr -> Int
+size (Val x)   = 1
+size (Add x y) = (size x) + (size y)
+
+
+-- Ex 7/
+
+data Maybe' a = Nothing' | Just' a deriving (Show)
+
+instance Eq a => Eq (Maybe' a) where
+    --(==) :: Maybe' a -> Maybe' a -> Bool
+    Nothing'  == Nothing'  = True
+    (Just' x) == (Just' y) = x == y
+    _         == _         = False
+
+
+instance Eq a => Eq [a] where
+    --(==) :: [a] -> [a] -> bool
+    []     == []     = True
+    (x:xs) == (y:ys) = (x == y) && (xs == ys)
+    _      == _      = False
