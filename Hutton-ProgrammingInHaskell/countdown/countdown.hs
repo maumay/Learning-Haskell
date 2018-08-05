@@ -92,8 +92,8 @@ removeFirst x (y:ys) | x == y    = ys
 -- If split included empty lists then we would get an infinite recursion
 -- in the results function.
 split :: [a] -> [([a], [a])]
-split [] = []
-split [x] = []
+split []     = []
+split [x]    = []
 split (x:xs) = ([x], xs) : [(x:ls, rs) | (ls, rs) <- split xs]
 
 type Result = (Expr, Integer)
@@ -108,15 +108,14 @@ results ns  = [res | (ls, rs) <- split ns,
 
 combine :: Result -> Result -> [Result]
 combine (e1, v1) (e2, v2) = 
-
     [(App o e1 e2, apply o v1 v2) | o <- ops, valid o v1 v2]
 
 ops :: [Op]
 ops = [Add, Sub, Mul, Div, Pow]
 
-
 solutions :: [Integer] -> Integer -> [Expr]
 solutions ns n = [e | c <- choices ns, (e,v) <- results c, v == n]
+
 
 -- Main
 main :: IO ()
