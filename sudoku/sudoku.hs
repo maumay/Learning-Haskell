@@ -1,5 +1,5 @@
 import qualified Data.Set as Set
-import Data.Maybe (isNothing, isJust)
+import Data.Maybe (isNothing, isJust, fromJust)
 import Data.Ord (comparing)
 import Data.List (sortBy, find)
 import Control.Monad (join)
@@ -17,7 +17,6 @@ type Grid  = [GridSquare]
 type Row   = [GridSquare]
 type Col   = [GridSquare]
 type Block = [GridSquare]
-
 
 rown :: Grid -> Int -> Row
 rown g n = take 9 $ drop (9 * n) g
@@ -103,6 +102,49 @@ solveGrid g | isCompletedGrid g = Just g
                 evolved = concat $ map (multiEvolveGrid g) (sortGridPoints g)
 
 
+-- IO stuff 
 
---main :: IO()
+getSudokuRow :: IO Row
+getSudokuRow = do 
+  line <- getLine
+  let split = words line
+      nums = map fromJust (filter isJust (map readMaybe split))
+  if length nums /= 9
+    then do
+      putStrLn "Invalid row, try inputting it again."
+      getSudokuRow
+    else
+      let f = \n -> if 0 < n && n < 10 then Just n else Nothing
+      in return $ map f nums
+
+
+getSudokuGrid :: IO Grid
+getSudokuGrid = do
+  rows <- sequence $ take 9 (repeat getSudokuRow)
+  return $ concat rows
+
+
+readMaybe :: Read a => String -> Maybe a
+readMaybe s = case reads s of
+                  [(val, "")] -> Just val
+                  _           -> Nothing
+
+rows :: Grid -> [[Int]]
+rows [] = []
+rows g  = (map fromJust (take 9 g)) : (rows $ drop 9 g)
+
+
+main :: IO ()
+main = do
+  putStrLn "Enter 9 line of 9 white space separated numbers."
+  grid <- getSudokuGrid
+  let solved = solveGrid grid
+  if isNothing solved
+    then do
+      putStrLn "Grid not solvable!"
+    else do
+      let g = fromJust solved
+          r = map show (rows g)
+      sequence_ (map putStrLn r)
+
 
