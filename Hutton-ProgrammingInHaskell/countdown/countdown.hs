@@ -119,4 +119,7 @@ solutions ns n = [e | c <- choices ns, (e,v) <- results c, v == n]
 
 -- Main
 main :: IO ()
-main = print $ solutions [1, 3, 7, 10, 25, 50] 765
+main = sequence_ . map putStrLn $ [show solns, "Number of solutions: " ++ nsolns]
+       where
+        solns  = solutions [50, 25, 2, 4, 8, 1] 241
+        nsolns = show $ length solns
