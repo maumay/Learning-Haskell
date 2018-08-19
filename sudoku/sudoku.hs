@@ -67,9 +67,6 @@ nthCol g n = map (g !!) (colIndices !! n)
 nthBlock :: Grid -> Int -> Block
 nthBlock g n = map (g!!) (blockIndices !! n)
 
-p2block :: Grid -> GridPoint -> Block
-p2block g (r, c) = nthBlock g (3 * (r `div` 3) + (c `div` 3))
-
 usedEntries :: Grid -> GridPoint -> Int
 usedEntries g (row, col) = usedRow .|. usedCol .|. usedBlock
                              where
