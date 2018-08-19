@@ -49,10 +49,9 @@ blockIndices = let gr     = [0..80]
 
 -- Functions
 squares2bitset :: [GridSquare] -> Int
-squares2bitset xs = foldr acc 0 xs
-                    where
-                        acc gs n | isNothing gs = n 
+squares2bitset xs = let acc gs n | isNothing gs = n 
                                  | otherwise    = n .|. (shift $ fromJust gs)
+                    in foldr acc 0 xs
 
 emptyPoints :: Grid -> [GridPoint]
 emptyPoints g = let point2entry (r, c) = g !! (9 * r + c)
@@ -79,15 +78,14 @@ nLegalEntries :: Grid -> GridPoint -> Int
 nLegalEntries g p = finiteBitSize $ fullEntrySet `xor` (usedEntries g p)
 
 legalEntries :: Grid -> GridPoint -> [Int]
-legalEntries g p = filter pred possibleEntries
-                    where
-                     pred n = ((shift n) .&. used) == 0
-                     used   = usedEntries g p
+legalEntries g p = let pred n = ((shift n) .&. used) == 0
+                       used   = usedEntries g p
+                   in filter pred possibleEntries
 
 getTargetPoint :: Grid -> Maybe GridPoint
-getTargetPoint g = minimumBy' f (emptyPoints g)
-                   where
-                    f p q = compare (nLegalEntries g p) (nLegalEntries g q)
+getTargetPoint g = let f p q = compare (nle p) (nle q)
+                       nle   = nLegalEntries g
+                   in minimumBy' f (emptyPoints g)
 
 evolveGrid :: Grid -> GridPoint -> Int -> Grid
 evolveGrid g (r, c) e = let index = 9 * r + c 
@@ -103,7 +101,6 @@ solveGrid g | isNothing mtarget = Just g
                 evolved  = map (evolveGrid g target) entries
 
 -- IO stuff 
-
 uniqueInts :: Int -> [Int] -> Bool
 uniqueInts n []     = True
 uniqueInts n (x:xs) = let y = shift x
