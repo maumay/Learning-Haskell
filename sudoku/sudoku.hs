@@ -7,49 +7,60 @@ import Control.Monad (join)
 
 type GridSquare = Maybe Int
 
+possibleEntries :: [Int]
+possibleEntries = [1..9]
+
+squares2bitset :: [GridSquare] -> Int
+squares2bitset xs = foldr acc 0 xs
+                    where
+                        (p, f)   = (isNothing, fromJust)
+                        acc gs n = if p gs then n else n .|. (1 `shiftL` (f gs))
+
+
 uniqueInts :: Int -> [Int] -> Bool
 uniqueInts n []     = True
 uniqueInts n (x:xs) = ((xShift .&. n) == 0) && (uniqueInts (n .|. xShift) xs)
                       where
-                        xShift  = 1 `shiftL` x
+                        xShift = 1 `shiftL` x
 
 isLegalSquareSet :: [GridSquare] -> Bool
 isLegalSquareSet xs = uniqueInts 0 (map fromJust (filter isJust xs))
 
 
 type Grid  = [GridSquare]
+
+
+isCompletedGrid :: Grid -> Bool
+isCompletedGrid g = all isJust g
+
+
 type Row   = [GridSquare]
 type Col   = [GridSquare]
 type Block = [GridSquare]
 
 nthRow :: Grid -> Int -> Row
-nthRow g n = map (g!!) (rowIndices!!n) 
+nthRow g n = map (g !!) (rowIndices !! n) 
 
 rowIndices :: [[Int]]
-rowIndices = let r = [0..8]
-             in [[9 * row + m | m <- r] | row <- r]
+rowIndices = let r = [0..8] in [[9 * row + m | m <- r] | row <- r]
 
 
 nthCol :: Grid -> Int -> Col
-nthCol g n = map (g!!) (colIndices!!n)
+nthCol g n = map (g !!) (colIndices !! n)
 
 colIndices :: [[Int]]
-colIndices = let r = [0..8]
-             in [[9 * row  + col | row <- [0..8]] | col <- [0..8]]
+colIndices = let r = [0..8] 
+             in [[9 * row + col | row <- [0..8]] | col <- [0..8]]
 
 
 nthBlock :: Grid -> Int -> Block
-nthBlock g n = map (g!!) (blockIndices!!n)
+nthBlock g n = map (g!!) (blockIndices !! n)
 
 blockIndices :: [[Int]]
 blockIndices = let gr     = [0..80]
-                   blen   = [0..2]
-                   bstart = [27 * x + 3 * y | x <- blen, y <- blen]
-               in [[gr!!(s + x + 9*y) | x <- blen, y <- blen] | s <- bstart]
-
-
-isCompletedGrid :: Grid -> Bool
-isCompletedGrid g = all isJust g
+                   br     = [0..2]
+                   bstart = [27 * x + 3 * y | x <- br, y <- br]
+               in [[gr !! (s + x + 9*y) | x <- br, y <- br] | s <- bstart]
 
 
 type GridPoint = (Int, Int)
@@ -62,57 +73,44 @@ point2entry :: Grid -> GridPoint -> GridSquare
 point2entry g (row, col) = g !! (9 * row + col)
 
 
-point2row :: Grid -> GridPoint -> Row
-point2row g (row, col) = filter isJust $ nthRow g row
+p2block :: Grid -> GridPoint -> Block
+p2block g (r, c) = nthBlock g (3 * (r `div` 3) + (c `div` 3))
 
 
-point2col :: Grid -> GridPoint -> Col
-point2col g (row, col) = filter isJust $ nthCol g col
-
-
-point2block :: Grid -> GridPoint -> Block
-point2block g p = filter isJust $ nthBlock g $ f p
-                  where
-                   f (row, col) = (3*(row `div` 3)) + (col `div` 3)
+-- Could maybe make faster still by utilising laziness I think
+legalEntries :: Grid -> GridPoint -> [Int]
+legalEntries g p@(row, col) = filter pred possibleEntries
+                               where
+                                pred n    = ((1 `shiftL` n) .&. used) == 0
+                                usedRow   = squares2bitset $ nthRow g row
+                                usedCol   = squares2bitset $ nthCol g col
+                                usedBlock = squares2bitset $ p2block g p
+                                used      = usedRow .|. usedCol .|. usedBlock
 
 
 emptyPoints :: Grid -> [GridPoint]
 emptyPoints g = filter (isNothing . point2entry g) gridpoints
 
 
-legalEntries :: Grid -> GridPoint -> [Int]
-legalEntries g point | isJust $ point2entry g point = error ""
-                     | otherwise                    = filter p [1..9]
-                      where
-                        (p2r, p2c, p2b) = (point2row, point2col, point2block)
-                        xs              = map ($ point) [p2r g, p2c g, p2b g]
-                        p n             = all isLegalSquareSet $ map (Just n :) xs
+sortEmptyGridPoints :: Grid -> [(GridPoint, [Int])]
+sortEmptyGridPoints g = sortBy (comparing $ length . snd) (zip xs ys)
+                        where
+                          xs = emptyPoints g
+                          ys = map (legalEntries g) xs
 
 
-sortGridPoints :: Grid -> [(GridPoint, [Int])]
-sortGridPoints g = sortBy (comparing $ length . snd ) (zip xs ys)
-                   where
-                    xs = emptyPoints g
-                    ys = map (legalEntries g) xs
-
-
--- No checks on legality
 evolveGrid :: Grid -> GridPoint -> Int -> Grid
 evolveGrid g (r, c) e = (take index g) ++ (Just e : drop (index + 1) g)
                          where
                           index = 9 * r + c
 
 
-multiEvolveGrid :: Grid -> (GridPoint, [Int]) -> [Grid]
-multiEvolveGrid g (p, xs) = map (evolveGrid g p) xs
-
-
 solveGrid :: Grid -> Maybe Grid
 solveGrid g | isCompletedGrid g = Just g
             | otherwise         = join $ find isJust (map solveGrid evolved)  
             where
-                evolved = concat $ map (multiEvolveGrid g) (sortGridPoints g)
-
+                evolved                = concat $ map (ev g) (sortEmptyGridPoints g)
+                ev g (p, legalentries) = map (evolveGrid g p) legalentries
 
 -- IO stuff 
 
