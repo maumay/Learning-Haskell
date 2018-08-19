@@ -7,9 +7,6 @@ import Control.Monad (join)
 
 type GridSquare = Maybe Int
 
---isLegalSquareSet' :: [GridSquare] -> Bool
-
-
 uniqueInts :: Int -> [Int] -> Bool
 uniqueInts n []     = True
 uniqueInts n (x:xs) = ((xShift .&. n) == 0) && (uniqueInts (n .|. xShift) xs)
@@ -29,23 +26,26 @@ nthRow :: Grid -> Int -> Row
 nthRow g n = map (g!!) (rowIndices!!n) 
 
 rowIndices :: [[Int]]
-rowIndices = [take 9 $ drop (9 * n) [0..80] | n <- [0..8]]
+rowIndices = let r = [0..8]
+             in [[9 * row + m | m <- r] | row <- r]
 
 
-coln :: Grid -> Int -> Col
-coln g n = map (g!!) (colIndices!!n)
+nthCol :: Grid -> Int -> Col
+nthCol g n = map (g!!) (colIndices!!n)
 
 colIndices :: [[Int]]
-colIndices = [[col + 9 * row | row <- [0..8]] | col <- [0..8]]
+colIndices = let r = [0..8]
+             in [[9 * row  + col | row <- [0..8]] | col <- [0..8]]
 
 
-blockn :: Grid -> Int -> Block
-blockn g n = [g !! (start + x + 9*y) | x <-[0..2], y <-[0..2]]
-             where
-                start = blockstarts !! n
+nthBlock :: Grid -> Int -> Block
+nthBlock g n = map (g!!) (blockIndices!!n)
 
-blockstarts :: [Int]
-blockstarts = [27*x + 3*y | x <-[0..2], y <-[0..2]]
+blockIndices :: [[Int]]
+blockIndices = let gr     = [0..80]
+                   blen   = [0..2]
+                   bstart = [27 * x + 3 * y | x <- blen, y <- blen]
+               in [[gr!!(s + x + 9*y) | x <- blen, y <- blen] | s <- bstart]
 
 
 isCompletedGrid :: Grid -> Bool
@@ -67,11 +67,11 @@ point2row g (row, col) = filter isJust $ nthRow g row
 
 
 point2col :: Grid -> GridPoint -> Col
-point2col g (row, col) = filter isJust $ coln g col
+point2col g (row, col) = filter isJust $ nthCol g col
 
 
 point2block :: Grid -> GridPoint -> Block
-point2block g p = filter isJust $ blockn g $ f p
+point2block g p = filter isJust $ nthBlock g $ f p
                   where
                    f (row, col) = (3*(row `div` 3)) + (col `div` 3)
 
