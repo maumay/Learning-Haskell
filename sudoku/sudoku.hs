@@ -130,6 +130,7 @@ extractRows :: Grid -> [[Int]]
 extractRows [] = []
 extractRows g  = (map fromJust (take 9 g)) : (extractRows $ drop 9 g)
 
+
 getSudokuRow :: IO Row
 getSudokuRow = do 
   line <- getLine
@@ -140,8 +141,9 @@ getSudokuRow = do
       putStrLn "Invalid row, try  again."
       getSudokuRow
     else
-      let f = \n -> if 0 < n && n < 10 then Just n else Nothing
+      let f n = if 0 < n && n < 10 then Just n else Nothing
       in return $ map f nums
+
 
 getSudokuGrid :: IO Grid
 getSudokuGrid = do
@@ -153,9 +155,10 @@ getSudokuGrid = do
     putStrLn "Invalid grid, try again."
     getSudokuGrid
 
+
 main :: IO ()
 main = do
-  putStrLn "Enter 9 lines of 9 white space separated numbers. Zero represents absence."
+  putStrLn "Enter 9 rows of 9 white space separated numbers. Zero represents absence."
   grid <- getSudokuGrid
   let solved = solveGrid grid
   if isNothing solved
