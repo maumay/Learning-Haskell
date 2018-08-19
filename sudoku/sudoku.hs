@@ -47,7 +47,6 @@ blockIndices = let gr     = [0..80]
                in [[gr !! (s + x + 9*y) | x <- br, y <- br] | s <- bstart]
 
 
-
 -- Functions
 squares2bitset :: [GridSquare] -> Int
 squares2bitset xs = foldr acc 0 xs
@@ -55,58 +54,47 @@ squares2bitset xs = foldr acc 0 xs
                         acc gs n | isNothing gs = n 
                                  | otherwise    = n .|. (shift $ fromJust gs)
 
-
 emptyPoints :: Grid -> [GridPoint]
-emptyPoints g = filter (isNothing . point2entry) gridpoints
-                where
-                    point2entry (r, c) = g !! (9 * r + c)
-
+emptyPoints g = let point2entry (r, c) = g !! (9 * r + c)
+                in filter (isNothing . point2entry) gridpoints
 
 nthRow :: Grid -> Int -> Row
 nthRow g n = map (g !!) (rowIndices !! n) 
 
-
 nthCol :: Grid -> Int -> Col
 nthCol g n = map (g !!) (colIndices !! n)
-
 
 nthBlock :: Grid -> Int -> Block
 nthBlock g n = map (g!!) (blockIndices !! n)
 
-
 p2block :: Grid -> GridPoint -> Block
 p2block g (r, c) = nthBlock g (3 * (r `div` 3) + (c `div` 3))
-
 
 usedEntries :: Grid -> GridPoint -> Int
 usedEntries g (row, col) = usedRow .|. usedCol .|. usedBlock
                              where
-                                usedRow     = squares2bitset $ nthRow g row
-                                usedCol     = squares2bitset $ nthCol g col
-                                usedBlock   = squares2bitset $ p2block row col
-                                p2block r c = nthBlock g (3 * (r `div` 3) + (c `div` 3))
+                              usedRow     = squares2bitset $ nthRow g row
+                              usedCol     = squares2bitset $ nthCol g col
+                              usedBlock   = squares2bitset $ p2block row col
+                              p2block r c = nthBlock g (3 * (r `div` 3) + (c `div` 3))
 
 nLegalEntries :: Grid -> GridPoint -> Int
 nLegalEntries g p = finiteBitSize $ fullEntrySet `xor` (usedEntries g p)
 
-
 legalEntries :: Grid -> GridPoint -> [Int]
 legalEntries g p = filter pred possibleEntries
                     where
-                      pred n = ((shift n) .&. used) == 0
-                      used   = usedEntries g p
-
+                     pred n = ((shift n) .&. used) == 0
+                     used   = usedEntries g p
 
 getTargetPoint :: Grid -> Maybe GridPoint
 getTargetPoint g = minimumBy' f (emptyPoints g)
                    where
                     f p q = compare (nLegalEntries g p) (nLegalEntries g q)
 
-
 evolveGrid :: Grid -> GridPoint -> Int -> Grid
-evolveGrid g (r, c) e = (take index g) ++ (Just e : drop (index + 1) g)
-                         where
-                          index = 9 * r + c
+evolveGrid g (r, c) e = let index = 9 * r + c 
+                        in (take index g) ++ (Just e : drop (index + 1) g)                          
 
 solveGrid :: Grid -> Maybe Grid
 solveGrid g | isNothing mtarget = Just g
@@ -121,14 +109,11 @@ solveGrid g | isNothing mtarget = Just g
 
 uniqueInts :: Int -> [Int] -> Bool
 uniqueInts n []     = True
-uniqueInts n (x:xs) = ((xShift .&. n) == 0) && (uniqueInts (n .|. xShift) xs)
-                      where
-                        xShift = 1 `shiftL` x
-
+uniqueInts n (x:xs) = let y = shift x
+                      in ((y .&. n) == 0) && (uniqueInts (n .|. y) xs)
 
 isLegalSquareSet :: [GridSquare] -> Bool
 isLegalSquareSet xs = uniqueInts 0 (map fromJust (filter isJust xs))
-
 
 isLegalStartGrid :: Grid -> Bool
 isLegalStartGrid g | length g /= 81 = False
@@ -139,7 +124,6 @@ isLegalStartGrid g | length g /= 81 = False
                         blocks   = map (nthBlock g) [0..8]
                         combined = rows ++ cols ++ blocks
 
-
 readMaybe :: Read a => String -> Maybe a
 readMaybe s = case reads s of
                   [(val, "")] -> Just val
@@ -148,7 +132,6 @@ readMaybe s = case reads s of
 extractRows :: Grid -> [[Int]]
 extractRows [] = []
 extractRows g  = (map fromJust (take 9 g)) : (extractRows $ drop 9 g)
-
 
 getSudokuRow :: IO Row
 getSudokuRow = do 
@@ -163,7 +146,6 @@ getSudokuRow = do
       let f = \n -> if 0 < n && n < 10 then Just n else Nothing
       in return $ map f nums
 
-
 getSudokuGrid :: IO Grid
 getSudokuGrid = do
   rows <- sequence $ take 9 (repeat getSudokuRow)
@@ -173,7 +155,6 @@ getSudokuGrid = do
   else do
     putStrLn "Invalid grid, try again."
     getSudokuGrid
-
 
 main :: IO ()
 main = do
