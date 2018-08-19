@@ -1,7 +1,7 @@
 import Data.Maybe (isNothing, isJust, fromJust)
 import Data.Ord (comparing)
-import Data.List (sortBy, find)
-import Data.Bits (shiftL, (.&.), (.|.))
+import Data.List (sortBy, find, minimumBy)
+import Data.Bits (shiftL, (.&.), (.|.), finiteBitSize, xor)
 import Control.Monad (join)
 
 
@@ -10,21 +10,14 @@ type GridSquare = Maybe Int
 possibleEntries :: [Int]
 possibleEntries = [1..9]
 
+fullEntrySet :: Int
+fullEntrySet = foldr (.|.) 0 (map (1 `shiftL`) possibleEntries)
+
 squares2bitset :: [GridSquare] -> Int
 squares2bitset xs = foldr acc 0 xs
                     where
                         (p, f)   = (isNothing, fromJust)
                         acc gs n = if p gs then n else n .|. (1 `shiftL` (f gs))
-
-
-uniqueInts :: Int -> [Int] -> Bool
-uniqueInts n []     = True
-uniqueInts n (x:xs) = ((xShift .&. n) == 0) && (uniqueInts (n .|. xShift) xs)
-                      where
-                        xShift = 1 `shiftL` x
-
-isLegalSquareSet :: [GridSquare] -> Bool
-isLegalSquareSet xs = uniqueInts 0 (map fromJust (filter isJust xs))
 
 
 type Grid  = [GridSquare]
@@ -77,6 +70,15 @@ p2block :: Grid -> GridPoint -> Block
 p2block g (r, c) = nthBlock g (3 * (r `div` 3) + (c `div` 3))
 
 
+nLegalEntries :: Grid -> GridPoint -> Int
+nLegalEntries g p@(row, col) = finiteBitSize $ fullEntrySet `xor` used
+                               where
+                                 usedRow   = squares2bitset $ nthRow g row
+                                 usedCol   = squares2bitset $ nthCol g col
+                                 usedBlock = squares2bitset $ p2block g p
+                                 used      = usedRow .|. usedCol .|. usedBlock
+
+
 -- Could maybe make faster still by utilising laziness I think
 legalEntries :: Grid -> GridPoint -> [Int]
 legalEntries g p@(row, col) = filter pred possibleEntries
@@ -92,11 +94,33 @@ emptyPoints :: Grid -> [GridPoint]
 emptyPoints g = filter (isNothing . point2entry g) gridpoints
 
 
-sortEmptyGridPoints :: Grid -> [(GridPoint, [Int])]
-sortEmptyGridPoints g = sortBy (comparing $ length . snd) (zip xs ys)
-                        where
-                          xs = emptyPoints g
-                          ys = map (legalEntries g) xs
+getTargetPoint :: Grid -> Maybe GridPoint
+getTargetPoint g = minimumBy' f (emptyPoints g)
+                   where
+                    f p q = compare (nLegalEntries g p) (nLegalEntries g q)
+
+
+minimumBy' :: (a -> a -> Ordering) -> [a] -> Maybe a
+minimumBy' f [] = Nothing
+minimumBy' f xs = Just (minimumBy f xs)
+
+
+solveGrid2 :: Grid -> Maybe Grid
+solveGrid2 g | isNothing mtarget = Just g
+             | otherwise         = join $ find isJust (map solveGrid2 evolved)
+               where
+                mtarget  = getTargetPoint g
+                target   = fromJust mtarget
+                entries  = legalEntries g target
+                evolved  = map (evolveGrid g target) entries
+
+
+
+-- sortEmptyGridPoints :: Grid -> [(GridPoint, [Int])]
+-- sortEmptyGridPoints g = sortBy (comparing $ length . snd) (zip xs ys)
+--                         where
+--                           xs = emptyPoints g
+--                           ys = map (legalEntries g) xs
 
 
 evolveGrid :: Grid -> GridPoint -> Int -> Grid
@@ -105,12 +129,12 @@ evolveGrid g (r, c) e = (take index g) ++ (Just e : drop (index + 1) g)
                           index = 9 * r + c
 
 
-solveGrid :: Grid -> Maybe Grid
-solveGrid g | isCompletedGrid g = Just g
-            | otherwise         = join $ find isJust (map solveGrid evolved)  
-            where
-                evolved                = concat $ map (ev g) (sortEmptyGridPoints g)
-                ev g (p, legalentries) = map (evolveGrid g p) legalentries
+-- solveGrid :: Grid -> Maybe Grid
+-- solveGrid g | isCompletedGrid g = Just g
+--             | otherwise         = join $ find isJust (map solveGrid evolved)  
+--             where
+--                 evolved                = concat $ map (ev g) (sortEmptyGridPoints g)
+--                 ev g (p, legalentries) = map (evolveGrid g p) legalentries
 
 -- IO stuff 
 
@@ -124,8 +148,25 @@ getSudokuRow = do
       putStrLn "Invalid row, try inputting it again."
       getSudokuRow
     else
-      let f = \n -> if 0 < n && n < 10 then Just n else Nothing
-      in return $ map f nums
+      let f       = \n -> if 0 < n && n < 10 then Just n else Nothing
+          wrapped = map f nums
+      in
+      if isLegalSquareSet wrapped
+        then do
+            return wrapped
+      else do 
+        putStrLn "Invalid row, try inputting it again."
+        getSudokuRow
+
+
+uniqueInts :: Int -> [Int] -> Bool
+uniqueInts n []     = True
+uniqueInts n (x:xs) = ((xShift .&. n) == 0) && (uniqueInts (n .|. xShift) xs)
+                      where
+                        xShift = 1 `shiftL` x
+
+isLegalSquareSet :: [GridSquare] -> Bool
+isLegalSquareSet xs = uniqueInts 0 (map fromJust (filter isJust xs))
 
 
 getSudokuGrid :: IO Grid
@@ -148,7 +189,7 @@ main :: IO ()
 main = do
   putStrLn "Enter 9 line of 9 white space separated numbers."
   grid <- getSudokuGrid
-  let solved = solveGrid grid
+  let solved = solveGrid2 grid
   if isNothing solved
     then do
       putStrLn "Grid not solvable!"
