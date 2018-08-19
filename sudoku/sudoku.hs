@@ -1,16 +1,23 @@
-import qualified Data.Set as Set
 import Data.Maybe (isNothing, isJust, fromJust)
 import Data.Ord (comparing)
 import Data.List (sortBy, find)
+import Data.Bits (shiftL, (.&.), (.|.))
 import Control.Monad (join)
 
 
 type GridSquare = Maybe Int
 
-isLegalSquareSet :: [GridSquare] -> Bool
-isLegalSquareSet xs = (length ys) == (Set.size $ Set.fromList ys)
+--isLegalSquareSet' :: [GridSquare] -> Bool
+
+
+uniqueInts :: Int -> [Int] -> Bool
+uniqueInts n []     = True
+uniqueInts n (x:xs) = ((xShift .&. n) == 0) && (uniqueInts (n .|. xShift) xs)
                       where
-                          ys = filter isJust xs
+                        xShift  = 1 `shiftL` x
+
+isLegalSquareSet :: [GridSquare] -> Bool
+isLegalSquareSet xs = uniqueInts 0 (map fromJust (filter isJust xs))
 
 
 type Grid  = [GridSquare]
@@ -18,13 +25,18 @@ type Row   = [GridSquare]
 type Col   = [GridSquare]
 type Block = [GridSquare]
 
-rown :: Grid -> Int -> Row
-rown g n = take 9 $ drop (9 * n) g
+nthRow :: Grid -> Int -> Row
+nthRow g n = map (g!!) (rowIndices!!n) 
+
+rowIndices :: [[Int]]
+rowIndices = [take 9 $ drop (9 * n) [0..80] | n <- [0..8]]
 
 
 coln :: Grid -> Int -> Col
-coln [] n  = []
-coln g  n  = (head $ drop n g) : (coln (drop 9 g) n)
+coln g n = map (g!!) (colIndices!!n)
+
+colIndices :: [[Int]]
+colIndices = [[col + 9 * row | row <- [0..8]] | col <- [0..8]]
 
 
 blockn :: Grid -> Int -> Block
@@ -51,7 +63,7 @@ point2entry g (row, col) = g !! (9 * row + col)
 
 
 point2row :: Grid -> GridPoint -> Row
-point2row g (row, col) = filter isJust $ rown g row
+point2row g (row, col) = filter isJust $ nthRow g row
 
 
 point2col :: Grid -> GridPoint -> Col
@@ -120,8 +132,8 @@ getSudokuRow = do
 
 getSudokuGrid :: IO Grid
 getSudokuGrid = do
-  rows <- sequence $ take 9 (repeat getSudokuRow)
-  return $ concat rows
+  extractRows <- sequence $ take 9 (repeat getSudokuRow)
+  return $ concat extractRows
 
 
 readMaybe :: Read a => String -> Maybe a
@@ -129,9 +141,9 @@ readMaybe s = case reads s of
                   [(val, "")] -> Just val
                   _           -> Nothing
 
-rows :: Grid -> [[Int]]
-rows [] = []
-rows g  = (map fromJust (take 9 g)) : (rows $ drop 9 g)
+extractRows :: Grid -> [[Int]]
+extractRows [] = []
+extractRows g  = (map fromJust (take 9 g)) : (extractRows $ drop 9 g)
 
 
 main :: IO ()
@@ -144,7 +156,7 @@ main = do
       putStrLn "Grid not solvable!"
     else do
       let g = fromJust solved
-          r = map show (rows g)
+          r = map show (extractRows g)
       sequence_ (map putStrLn r)
 
 
