@@ -1,5 +1,0 @@
-Run ./sudoku inside this directory to run the program. 
-
-Can solve the 'worlds hardest' sudoku problem - 
-https://www.telegraph.co.uk/news/science/science-news/9359579/Worlds-hardest-sudoku-can-you-crack-it.html
-in much less than a second, ~100ms.
