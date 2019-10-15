@@ -1,5 +1,9 @@
 def is_unique1(query):
-    """ When additional data structures allowed """
+    """
+    When additional data structures allowed
+    Time: O(n)
+    Space: O(n)
+    """
     charset = set()
     for char in query:
         if char in charset:
@@ -10,7 +14,11 @@ def is_unique1(query):
 
 
 def is_unique2(query):
-    """ When no additional data structure allowed """
+    """
+    When no additional data structure allowed
+    Time: O(nlogn)
+    Space: O(n)
+    """
     sorted_query = sorted(query)
     for i in range(len(query) - 1):
         if sorted_query[i] == sorted_query[i + 1]:
