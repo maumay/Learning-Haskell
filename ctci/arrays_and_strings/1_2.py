@@ -2,6 +2,10 @@ from collections import Counter
 
 
 def are_palindromes(left, right):
+    """
+    Time: O(n)
+    Space: O(n)
+    """
     return len(left) == len(right) and Counter(left) == Counter(right)
 
 
