@@ -1,9 +1,6 @@
 package leetcode.medium
 
-class TreeNode(var `val`: Int) {
-    var left: TreeNode? = null
-    var right: TreeNode? = null
-}
+import leetcode.TreeNode
 
 fun deepestLeavesSum(root: TreeNode): Int {
     val levelSums = mutableListOf<Int>()
