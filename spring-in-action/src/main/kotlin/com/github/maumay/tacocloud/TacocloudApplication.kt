@@ -10,13 +10,16 @@ import org.springframework.validation.Errors
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
-import java.lang.ClassCastException
-import java.util.*
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 import javax.validation.Valid
-import kotlin.reflect.jvm.internal.impl.load.kotlin.JvmType
 
 @SpringBootApplication
-class TacocloudApplication
+class TacocloudApplication : WebMvcConfigurer {
+	override fun addViewControllers(registry: ViewControllerRegistry) {
+		registry.addViewController("/").setViewName("home")
+	}
+}
 
 fun main(args: Array<String>) {
 	runApplication<TacocloudApplication>(*args)
@@ -37,14 +40,6 @@ val ingredients = listOf(
 )
 
 @Controller
-class HomeController {
-	@GetMapping(path= ["/"])
-	fun home(model: Model): String {
-		return "home"
-	}
-}
-
-@Controller
 @RequestMapping("/design")
 class DesignTacoController {
 	companion object {
@@ -53,24 +48,19 @@ class DesignTacoController {
 
 	@GetMapping
 	fun designGet(model: Model): String {
-		println("hi $model")
 		for (type in Type.values()) {
 			model.addAttribute(type.name.toLowerCase(), ingredients.filter { it.type == type })
 		}
-		model.addAttribute("design", Taco())
+		model.addAttribute("taco", Taco())
 		return "design"
 	}
 
 	@PostMapping
 	fun processDesign(model: Model, @Valid design: Taco, errors: Errors): String {
-		println("hi $model")
 		if (errors.hasErrors()) {
-            model.addAttribute("something", "x")
-			return "redirect:/design"
+			return designGet(model)
 		}
-
 		log.info(design.toString())
-		log.info(model.toString())
 		return "redirect:/orders/current"
 	}
 }
