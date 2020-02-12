@@ -13,7 +13,6 @@ interface IngredientRepository {
     fun findOne(id: String): Ingredient?
     fun save(ingredient: Ingredient): Ingredient
 }
-
 @Repository
 class JdbcIngredientRepository(@Autowired private val jdbc: JdbcTemplate) : IngredientRepository {
     override fun findOne(id: String): Ingredient? {

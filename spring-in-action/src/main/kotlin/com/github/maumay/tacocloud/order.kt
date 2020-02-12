@@ -2,27 +2,13 @@ package com.github.maumay.tacocloud
 
 import org.hibernate.validator.constraints.CreditCardNumber
 import java.util.*
-import javax.validation.constraints.*
-
-class Taco {
-    var id: Long? = null
-    var placeAt: Date? = null
-
-    @NotNull
-    @Size(min=5, message="Name must be at least 5 characters long.")
-    var name: String? = null
-
-    @Size(min=1, message="Must be at least one ingredient.")
-    var ingredients: List<String>? = null
-
-    override fun toString(): String {
-        return "Taco[name=$name, ingredients=$ingredients]"
-    }
-}
+import javax.validation.constraints.Digits
+import javax.validation.constraints.NotBlank
+import javax.validation.constraints.Pattern
 
 class Order {
     var id: Long? = null
-    var placeAt: Date? = null
+    var placedAt: Date? = null
 
     @NotBlank(message="Name required.")
     var name: String? = null
@@ -47,4 +33,8 @@ class Order {
 
     @Digits(integer = 3, fraction = 0, message = "Invalid CVV")
     var ccCVV: String? = null
+}
+
+interface OrderRepository {
+    fun save(order: Order): Order
 }
