@@ -17,16 +17,16 @@ class TacocloudApplicationTests {
 	}
 }
 
-@WebMvcTest(HomeController::class)
-class HomeControllerTest {
-	@Autowired
-	private var mockMvc: MockMvc? = null
-
-	@Test
-	fun testHomePage() {
-		mockMvc!!.perform(get("/"))
-				.andExpect(status().isOk)
-				.andExpect(view().name("home"))
-				.andExpect(content().string(containsString("Welcome to...")))
-	}
-}
+//@WebMvcTest(HomeController::class)
+//class HomeControllerTest {
+//	@Autowired
+//	lateinit var mockMvc: MockMvc
+//
+//	@Test
+//	fun testHomePage() {
+//		mockMvc.perform(get("/"))
+//				.andExpect(status().isOk)
+//				.andExpect(view().name("home"))
+//				.andExpect(content().string(containsString("Welcome to...")))
+//	}
+//}

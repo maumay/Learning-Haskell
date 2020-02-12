@@ -1,12 +1,13 @@
 package com.github.maumay.tacocloud
 
 import org.hibernate.validator.constraints.CreditCardNumber
+import java.util.*
 import javax.validation.constraints.*
 
-enum class IngredientType { WRAP, PROTEIN, VEGGIES, CHEESE, SAUCE }
-data class Ingredient(val id: String, val name: String, val type: IngredientType)
-
 class Taco {
+    var id: Long? = null
+    var placeAt: Date? = null
+
     @NotNull
     @Size(min=5, message="Name must be at least 5 characters long.")
     var name: String? = null
@@ -20,6 +21,9 @@ class Taco {
 }
 
 class Order {
+    var id: Long? = null
+    var placeAt: Date? = null
+
     @NotBlank(message="Name required.")
     var name: String? = null
 
