@@ -35,7 +35,10 @@ inline fun <T : Enum<T>> KClass<T>.values(): List<T> {
 @Controller
 @RequestMapping("/design")
 @SessionAttributes("order")
-class DesignTacoController(@Autowired private val ingredientRepo: IngredientRepository) {
+class DesignTacoController(
+        @Autowired private val ingredientRepo: IngredientRepository,
+        @Autowired private val tacoRepository: TacoRepository
+) {
 	companion object {
 		private val log: Logger = LoggerFactory.getLogger(DesignTacoController::class.java)
 	}
@@ -55,6 +58,7 @@ class DesignTacoController(@Autowired private val ingredientRepo: IngredientRepo
 		if (errors.hasErrors()) {
 			return designGet(model)
 		}
+        tacoRepository.save(design)
 		log.info(design.toString())
 		return "redirect:/orders/current"
 	}

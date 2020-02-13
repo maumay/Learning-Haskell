@@ -5,6 +5,7 @@ import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.jdbc.core.PreparedStatementCreatorFactory
 import org.springframework.jdbc.support.GeneratedKeyHolder
 import org.springframework.stereotype.Repository
+import java.sql.Timestamp
 import java.sql.Types
 import java.util.*
 import javax.validation.constraints.NotNull
@@ -36,16 +37,18 @@ class JdbcTacoRepository(@Autowired val jdbc: JdbcTemplate) : TacoRepository{
         val id = saveTacoInfo(design)
         design.id = id
         for (ingredient in design.ingredients) {
-            jdbc.update("insert into Taco_Ingredients (taco, ingredient) values ($id, $ingredient")
+            jdbc.update("insert into Taco_Ingredients (taco, ingredient) values (?, ?)", id, ingredient)
         }
         return design
     }
 
     private fun saveTacoInfo(design: Taco): Long {
         design.createdAt = Date()
-        val pscf = PreparedStatementCreatorFactory("insert into Taco (name, createdAt) values (${Types.VARCHAR}, ${Types.TIMESTAMP})")
+        val pscf = PreparedStatementCreatorFactory(
+                "insert into Taco (name, createdAt) values (?, ?)", Types.VARCHAR, Types.TIMESTAMP)
+        pscf.setReturnGeneratedKeys(true)
         val keyHolder = GeneratedKeyHolder()
-        jdbc.update(pscf.newPreparedStatementCreator(listOf(design.name, design.createdAt)), keyHolder)
+        jdbc.update(pscf.newPreparedStatementCreator(listOf(design.name, Timestamp(design.createdAt!!.time))), keyHolder)
         return keyHolder.key!!.toLong()
     }
 }
