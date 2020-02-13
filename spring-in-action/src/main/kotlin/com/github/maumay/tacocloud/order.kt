@@ -1,6 +1,11 @@
 package com.github.maumay.tacocloud
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import org.hibernate.validator.constraints.CreditCardNumber
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.jdbc.core.JdbcTemplate
+import org.springframework.jdbc.core.simple.SimpleJdbcInsert
+import org.springframework.stereotype.Repository
 import java.util.*
 import javax.validation.constraints.Digits
 import javax.validation.constraints.NotBlank
@@ -19,7 +24,7 @@ class Order {
     @NotBlank(message="City required.")
     var city: String? = null
 
-    @NotBlank(message="State required.")
+    @Pattern(regexp = "^[]]")
     var state: String? = null
 
     @NotBlank(message="Zip required.")
@@ -33,8 +38,34 @@ class Order {
 
     @Digits(integer = 3, fraction = 0, message = "Invalid CVV")
     var ccCVV: String? = null
+
+    /** Tracks the identifiers of the tacos added to this order. */
+    val tacos: MutableList<Long> = mutableListOf()
 }
 
 interface OrderRepository {
     fun save(order: Order): Order
+}
+
+@Repository
+class JdbcOrderRepository(@Autowired jdbc: JdbcTemplate) : OrderRepository {
+    private val orderInserter = SimpleJdbcInsert(jdbc).withTableName("Taco_Order").usingGeneratedKeyColumns("id")
+    private val orderTacoInserter = SimpleJdbcInsert(jdbc).withTableName("Taco_Order_Tacos")
+    private val objectMapper = ObjectMapper()
+
+    override fun save(order: Order): Order {
+        order.placedAt = Date()
+        val orderId = saveOrderDetails(order)
+        order.id = orderId
+        for (taco in order.tacos) {
+            orderTacoInserter.execute(mapOf("tacoOrder" to orderId, "taco" to taco))
+        }
+        return order
+    }
+
+    private fun saveOrderDetails(order: Order): Long {
+        val values = objectMapper.convertValue(order, MutableMap::class.java) as MutableMap<String, Any?>
+        values["placedAt"] = order.placedAt
+        return orderInserter.executeAndReturnKey(values).toLong()
+    }
 }

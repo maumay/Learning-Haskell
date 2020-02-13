@@ -8,10 +8,8 @@ import org.springframework.boot.runApplication
 import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
 import org.springframework.validation.Errors
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.SessionAttributes
+import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.support.SessionStatus
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 import javax.validation.Valid
@@ -43,22 +41,28 @@ class DesignTacoController(
 		private val log: Logger = LoggerFactory.getLogger(DesignTacoController::class.java)
 	}
 
+	@ModelAttribute(name = "order")
+	fun order(): Order = Order()
+
+	@ModelAttribute(name = "taco")
+	fun taco(): Taco = Taco()
+
 	@GetMapping
 	fun designGet(model: Model): String {
 		val ingredients = ingredientRepo.findAll().toList()
 		for (type in IngredientType.values()) {
 			model.addAttribute(type.name.toLowerCase(), ingredients.filter { it.type == type })
 		}
-		model.addAttribute("taco", Taco())
 		return "design"
 	}
 
 	@PostMapping
-	fun processDesign(model: Model, @Valid design: Taco, errors: Errors): String {
+	fun processDesign(model: Model, @Valid design: Taco, errors: Errors, @ModelAttribute(binding = false) order: Order): String {
 		if (errors.hasErrors()) {
 			return designGet(model)
 		}
         tacoRepository.save(design)
+		order.tacos.add(design.id!!)
 		log.info(design.toString())
 		return "redirect:/orders/current"
 	}
@@ -66,7 +70,8 @@ class DesignTacoController(
 
 @Controller
 @RequestMapping("/orders")
-class OrderController {
+@SessionAttributes("order")
+class OrderController(@Autowired private val orderRepository: OrderRepository) {
 	companion object {
 		private val log: Logger = LoggerFactory.getLogger(OrderController::class.java)
 	}
@@ -78,11 +83,12 @@ class OrderController {
 	}
 
     @PostMapping
-	fun processOrder(@Valid order: Order, model: Model, errors: Errors): String {
+	fun processOrder(@Valid order: Order, errors: Errors, sessionStatus: SessionStatus): String {
 		if (errors.hasErrors())
 			return "orderForm"
-		log.info(order.toString())
-		log.info(model.toString())
+		log.info("Saved $order")
+		orderRepository.save(order)
+		sessionStatus.setComplete()
 		return "redirect:/"
 	}
 }
