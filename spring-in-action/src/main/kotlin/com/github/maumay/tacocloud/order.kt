@@ -24,7 +24,7 @@ class Order {
     @NotBlank(message="City required.")
     var city: String? = null
 
-    @Pattern(regexp = "^[]]")
+    @IsState(message = "My custom message")
     var state: String? = null
 
     @NotBlank(message="Zip required.")
