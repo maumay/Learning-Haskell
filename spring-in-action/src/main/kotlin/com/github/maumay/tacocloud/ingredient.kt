@@ -4,9 +4,16 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Repository
 import java.sql.ResultSet
+import javax.persistence.Entity
+import javax.persistence.Id
 
 enum class IngredientType { WRAP, PROTEIN, VEGGIES, CHEESE, SAUCE }
-data class Ingredient(val id: String, val name: String, val type: IngredientType)
+
+@Entity
+data class Ingredient(@Id val id: String, val name: String, val type: IngredientType) {
+    @Suppress("unused")
+    private constructor() : this("", "", IngredientType.WRAP)
+}
 
 interface IngredientRepository {
     fun findAll(): Iterable<Ingredient>
