@@ -5,6 +5,12 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
+import org.springframework.context.annotation.Configuration
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
+import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
+import org.springframework.security.crypto.password.StandardPasswordEncoder
 import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
 import org.springframework.validation.Errors
@@ -12,6 +18,7 @@ import org.springframework.web.bind.annotation.*
 import org.springframework.web.bind.support.SessionStatus
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
+import javax.sql.DataSource
 import javax.validation.Valid
 import kotlin.reflect.KClass
 
@@ -26,9 +33,9 @@ fun main(args: Array<String>) {
 	runApplication<TacocloudApplication>(*args)
 }
 
-inline fun <T : Enum<T>> KClass<T>.values(): List<T> {
-	return List(java.enumConstants.size) {java.enumConstants[it]}
-}
+//inline fun <T : Enum<T>> KClass<T>.values(): List<T> {
+//	return List(java.enumConstants.size) {java.enumConstants[it]}
+//}
 
 @Controller
 @RequestMapping("/design")
@@ -90,5 +97,18 @@ class OrderController(@Autowired private val orderRepository: OrderRepository) {
 		orderRepository.save(order)
 		sessionStatus.setComplete()
 		return "redirect:/"
+	}
+}
+
+@Configuration
+@EnableWebSecurity
+class SecurityConfig(@Autowired private val dataSource: DataSource) : WebSecurityConfigurerAdapter() {
+	override fun configure(auth: AuthenticationManagerBuilder?) {
+		auth
+				?.jdbcAuthentication()
+				?.dataSource(dataSource)
+				?.usersByUsernameQuery("select username2, password, enabled from Users where username2=?")
+				?.authoritiesByUsernameQuery("select username2, authority from UserAuthorities where username2=?")
+				?.passwordEncoder(BCryptPasswordEncoder())
 	}
 }
