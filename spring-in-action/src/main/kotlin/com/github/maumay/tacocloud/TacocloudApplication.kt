@@ -5,11 +5,16 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
+import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder
+import org.springframework.security.config.annotation.web.builders.HttpSecurity
+import org.springframework.security.config.annotation.web.builders.WebSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter
+import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.crypto.password.StandardPasswordEncoder
 import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
@@ -102,13 +107,41 @@ class OrderController(@Autowired private val orderRepository: OrderRepository) {
 
 @Configuration
 @EnableWebSecurity
-class SecurityConfig(@Autowired private val dataSource: DataSource) : WebSecurityConfigurerAdapter() {
+class SecurityConfig(@Autowired private val userDetailsService: UserDetailsService) : WebSecurityConfigurerAdapter() {
+	@Bean
+    fun encoder(): PasswordEncoder = BCryptPasswordEncoder()
+
 	override fun configure(auth: AuthenticationManagerBuilder?) {
-		auth
-				?.jdbcAuthentication()
-				?.dataSource(dataSource)
-				?.usersByUsernameQuery("select username2, password, enabled from Users where username2=?")
-				?.authoritiesByUsernameQuery("select username2, authority from UserAuthorities where username2=?")
-				?.passwordEncoder(BCryptPasswordEncoder())
+		auth?.userDetailsService(userDetailsService)?.passwordEncoder(encoder())
+	}
+
+	override fun configure(web: WebSecurity?) {
+		web!!.ignoring().antMatchers("/h2-console/**")
+	}
+
+	override fun configure(http: HttpSecurity?) {
+		http!!.authorizeRequests()
+				.antMatchers("/design", "/orders").hasRole("USER")
+				.antMatchers("/", "/**").permitAll()
+		super.configure(http)
+	}
+}
+
+@Controller
+@RequestMapping("/register")
+class RegistrationController @Autowired constructor(
+		private val userRepository: UserRepository,
+		private val passwordEncoder: PasswordEncoder) {
+
+	@GetMapping
+	fun registerForm() = "registration"
+
+	@ModelAttribute(name = "registerForm")
+	fun registerFormAttribute() = RegistrationForm()
+
+	@PostMapping
+	fun processRegistration(form: RegistrationForm): String {
+		userRepository.save(form.toUser(passwordEncoder))
+		return "redirect:/login"
 	}
 }
