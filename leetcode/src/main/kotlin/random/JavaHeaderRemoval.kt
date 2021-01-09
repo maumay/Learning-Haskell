@@ -1,4 +1,0 @@
-package random
-
-object JavaHeaderRemoval {
-}
